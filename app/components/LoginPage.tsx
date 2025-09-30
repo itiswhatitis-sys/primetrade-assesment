@@ -42,23 +42,37 @@ export const LoginPageView = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError("");
     setPending(true);
-    const res = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: values.email, password: values.password }),
+        credentials: 'include'
+      });
 
-    if (res?.error) {
-      setError("Invalid email or password.");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || 'Invalid email or password.');
+      }
+
+      // save access token
+     if (data.accessToken) {
+  localStorage.setItem("accessToken", data.accessToken);
+}
+
+console.log("User:", data.user);       // should log user object
+console.log("AccessToken:", data.accessToken); 
+      router.push('/dashboard');
+    } catch (err: any) {
+      setError(err.message || "Invalid email or password.");
+    } finally {
       setPending(false);
-    } else {
-      setPending(false);
-      router.push("/dashboard"); // change to your desired route
     }
   };
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -116,7 +130,7 @@ export const LoginPageView = () => {
                   Log In
                 </Button>
 
-                <div className="text-center pt-0">
+                {/* <div className="text-center pt-0">
                   <span className="bg-card text-muted-foreground relative tracking-tighter">
                     or continue with
                   </span>
@@ -131,7 +145,7 @@ export const LoginPageView = () => {
                   >
                    <FcGoogle /> Google
                   </Button>
-                </div>
+                </div> */}
 
                 <div className="text-center text-sm">
                   Dont have an account?{" "}
@@ -144,9 +158,9 @@ export const LoginPageView = () => {
           </Form>
 
           {/* Side Image / Branding */}
-          <div className="bg-radial from-green-700 to-green-900 relative hidden md:flex flex-col gap-y-4 items-center justify-center">
-            <img src="/logo.svg" alt="logo" className="h-[92px] w-[92px]" />
-            <p className="text-2xl font-semibold text-white/90 pt-0">SME</p>
+          <div className="bg-black relative hidden md:flex flex-col gap-y-4 items-center justify-center">
+            {/* <img src="/logo.svg" alt="logo" className="h-[92px] w-[92px]" />
+            <p className="text-2xl font-semibold text-white/90 pt-0">SME</p> */}
           </div>
         </CardContent>
       </Card>

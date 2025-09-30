@@ -24,7 +24,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
-
+import { API_URL } from  "../lib/auth"
 // ✅ Schema
 const formSchema = z
   .object({
@@ -53,36 +53,43 @@ export const SignUpView = () => {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+ const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setError("");
     setPending(true);
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      // register on Express server
+      const registerRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: values.name,
           email: values.email,
-          password: values.password,
+          password: values.password
         }),
+        credentials: 'include'
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Signup failed");
+      const registerData = await registerRes.json();
+      if (!registerRes.ok) throw new Error(registerData.message || 'Signup failed');
 
-      const loginRes = await signIn("credentials", {
-        email: values.email,
-        password: values.password,
-        redirect: false,
+      // login immediately (server will set refresh cookie)
+      const loginRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: values.email, password: values.password }),
+        credentials: 'include'
       });
+      const loginData = await loginRes.json();
+      if (!loginRes.ok) throw new Error(loginData.message || 'Login after signup failed');
 
-      if (loginRes?.ok) {
-        router.push("/dashboard");
-      } else {
-        throw new Error("Login failed after signup");
+      // save access token (access stored client-side; refresh token is in httpOnly cookie)
+      if (loginData.accessToken) {
+        localStorage.setItem('accessToken', loginData.accessToken);
       }
+
+      router.push('/dashboard');
     } catch (err: any) {
-      setError(err.message || "Something went wrong");
+      setError(err.message || 'Something went wrong');
     } finally {
       setPending(false);
     }
@@ -175,7 +182,7 @@ export const SignUpView = () => {
                   {pending ? "Creating..." : "Sign Up"}
                 </Button>
 
-                <div className="text-center pt-0">
+                {/* <div className="text-center pt-0">
                   <span className="bg-card text-muted-foreground tracking-tighter">
                     or continue with
                   </span>
@@ -190,7 +197,7 @@ export const SignUpView = () => {
                   >
                    <FcGoogle /> Google
                   </Button>
-                </div>
+                </div> */}
 
                 <div className="text-center text-sm">
                   Have an account?{" "}
@@ -203,9 +210,9 @@ export const SignUpView = () => {
           </Form>
 
           {/* Side Panel */}
-          <div className="bg-radial from-green-700 to-green-900 hidden md:flex flex-col gap-y-4 items-center justify-center">
-            <img src="/logo.svg" alt="logo" className="h-[92px] w-[92px]" />
-            <p className="text-2xl font-semibold text-white/90 pt-0"> SME</p>
+          <div className="bg-black hidden md:flex flex-col gap-y-4 items-center justify-center">
+            {/* <img src="/logo.svg" alt="logo" className="h-[92px] w-[92px]" />
+            <p className="text-2xl font-semibold text-white/90 pt-0"> SME</p> */}
           </div>
         </CardContent>
       </Card>
