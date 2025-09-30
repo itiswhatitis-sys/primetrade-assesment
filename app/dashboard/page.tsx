@@ -57,7 +57,7 @@ export default function DashboardPage() {
         return;
       }
 
-      const userRes = await fetch("http://localhost:4000/api/auth/me", {
+      const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` },
         credentials: "include",
       });
@@ -71,7 +71,7 @@ export default function DashboardPage() {
       const userData = await userRes.json();
       setUser(userData.user);
 
-      const tasksRes = await fetch("http://localhost:4000/api/tasks", {
+      const tasksRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -112,8 +112,8 @@ export default function DashboardPage() {
 
     const method = currentTask?._id ? 'PUT' : 'POST';
     const url = currentTask?._id
-      ? `http://localhost:4000/api/tasks/${currentTask._id}`
-      : 'http://localhost:4000/api/tasks';
+      ? `${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${currentTask._id}`
+      : `${process.env.NEXT_PUBLIC_API_URL}/api/tasks`;
 
     const res = await fetch(url, {
       method,
@@ -144,7 +144,7 @@ export default function DashboardPage() {
     const token = localStorage.getItem("accessToken");
     if (!token) return;
 
-    const res = await fetch(`http://localhost:4000/api/tasks/${taskId}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tasks/${taskId}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,

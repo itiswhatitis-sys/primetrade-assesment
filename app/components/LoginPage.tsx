@@ -22,8 +22,7 @@ import { useForm } from "react-hook-form";
 import { OctagonAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
+
 const formSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1, { message: "Password is required" }),
@@ -66,7 +65,7 @@ const onSubmit = async (values: z.infer<typeof formSchema>) => {
 console.log("User:", data.user);       // should log user object
 console.log("AccessToken:", data.accessToken); 
       router.push('/dashboard');
-    } catch (err: any) {
+    } catch (err :any) {
       setError(err.message || "Invalid email or password.");
     } finally {
       setPending(false);

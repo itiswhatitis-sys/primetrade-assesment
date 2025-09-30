@@ -5,7 +5,6 @@
   import { useRouter } from 'next/navigation';
   import { ArrowRight } from 'lucide-react';
   import { Header } from './components/common/Header';
-import { ThemeToggle } from './components/common/ThemeToggle';
 
   export default function LandingPage() {
     const router = useRouter();

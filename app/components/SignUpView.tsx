@@ -22,9 +22,7 @@ import { useForm } from "react-hook-form";
 import { OctagonAlertIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react";
-import { FcGoogle } from "react-icons/fc";
-import { API_URL } from  "../lib/auth"
+
 // ✅ Schema
 const formSchema = z
   .object({
