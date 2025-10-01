@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Plus, Edit, Trash2, FileText } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, UserCircle, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Sidebar } from '../components/dashboard/Sidebar';
@@ -22,12 +22,22 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { format } from 'date-fns';
 
 interface Task {
   _id: string;
   title: string;
   description: string;
   email: string;
+  createdAt: string;
 }
 
 export default function DashboardPage() {
@@ -46,6 +56,7 @@ export default function DashboardPage() {
     title: '',
     description: '',
   });
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch user and tasks on page load
   useEffect(() => {
@@ -130,7 +141,7 @@ export default function DashboardPage() {
         setTasks(tasks.map((task) => (task._id === savedTask._id ? savedTask : task)));
         toast.success("Task updated successfully.");
       } else {
-        setTasks([...tasks, savedTask]);
+        setTasks([...tasks, { ...savedTask, createdAt: new Date().toISOString() }]);
         toast.success("Task created successfully.");
       }
       setIsDialogOpen(false);
@@ -159,6 +170,21 @@ export default function DashboardPage() {
     }
   };
 
+  // Handle user sign out
+  const handleSignOut = () => {
+    localStorage.removeItem("accessToken");
+    router.push("/login");
+  };
+
+  // 🔎 Filter tasks by search term
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(
+      (task) =>
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [tasks, searchTerm]);
+
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -178,58 +204,94 @@ export default function DashboardPage() {
               Welcome back{user?.name ? `, ${user.name}` : ''} 🫶
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => openDialog()}>
-                <Plus className="mr-2 h-4 w-4" /> Add New Task
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{currentTask?._id ? 'Edit Task' : 'Create Task'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSaveTask} className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="title" className="text-right">
-                    Title
-                  </Label>
-                  <Input
-                    id="title"
-                    name="title"
-                    value={formState.title}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                    required
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="description" className="text-right">
-                    Description
-                  </Label>
-                  <Textarea
-                    id="description"
-                    name="description"
-                    value={formState.description}
-                    onChange={handleInputChange}
-                    className="col-span-3"
-                    rows={4}
-                  />
-                </div>
-                <Button type="submit" className="w-full mt-4">
-                  {currentTask?._id ? 'Save Changes' : 'Create Task'}
+
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search tasks..."
+                className="pl-9 pr-4 py-2 w-full md:w-64"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+          
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => openDialog()}>
+                  <Plus className="mr-2 h-4 w-4" /> Add New Task
                 </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>{currentTask?._id ? 'Edit Task' : 'Create Task'}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSaveTask} className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="title" className="text-right">
+                      Title
+                    </Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      value={formState.title}
+                      onChange={handleInputChange}
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-start gap-4">
+                    <Label htmlFor="description" className="text-right">
+                      Description
+                    </Label>
+                    <Textarea
+                      id="description"
+                      name="description"
+                      value={formState.description}
+                      onChange={handleInputChange}
+                      className="col-span-3"
+                      rows={4}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full mt-4">
+                    {currentTask?._id ? 'Save Changes' : 'Create Task'}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+              <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="rounded-full">
+                  <UserCircle className="h-12 w-12" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.name || 'User'}</p>
+                    <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        {tasks.length === 0 ? (
+        {filteredTasks.length === 0 ? (
           <Card className="text-center p-8">
             <CardContent className="pt-8 pb-8">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">No Tasks yet</h3>
+              <h3 className="text-lg font-medium mb-2">No Tasks found</h3>
               <p className="text-muted-foreground mb-4">
-                Create your First Task
+                Try creating a new task
               </p>
               <Button onClick={() => openDialog()}>
                 <Plus className="mr-2 h-4 w-4" /> Create Task
@@ -238,20 +300,27 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {tasks.map((task) => (
+            {filteredTasks.map((task) => (
               <Card key={task._id}>
                 <CardHeader>
                   <CardTitle>{task.title}</CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-4">
                   <p className="text-muted-foreground">{task.description}</p>
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="outline" size="icon" onClick={() => openDialog(task)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="destructive" size="icon" onClick={() => handleDeleteTask(task._id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
+                    {task.createdAt && (
+                      <span>
+                        Created: {format(new Date(task.createdAt), 'MMM d, yyyy')}
+                      </span>
+                    )}
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="icon" onClick={() => openDialog(task)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="destructive" size="icon" onClick={() => handleDeleteTask(task._id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
